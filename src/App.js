@@ -1,13 +1,12 @@
 import { useState } from 'react';
 
-function Square({ value, onSquareClick }) {
+function Square({ value, onSquareClick, highlight }) {
   return (
-    <button className="square" onClick={onSquareClick}>
+    <button className={`square ${highlight ? 'highlight' : ''}`} onClick={onSquareClick}>
       {value}
     </button>
   );
 }
-
 function Board({ xIsNext, squares, onPlay }) {
   function handleClick(i) {
     if (calculateWinner(squares) || squares[i]) {
@@ -22,35 +21,45 @@ function Board({ xIsNext, squares, onPlay }) {
     onPlay(nextSquares);
   }
 
-  const winner = calculateWinner(squares);
+  const result = calculateWinner(squares);
   let status;
-  if (winner) {
-    status = 'Winner: ' + winner;
+  if (result && result.winner === 'draw') {
+    status = 'It\'s a draw!';
+  } else if (result && result.winner) {
+    status = 'Winner: ' + result.winner;
   } else {
     status = 'Next player: ' + (xIsNext ? 'X' : 'O');
   }
+
+  const renderSquare = (i) => {
+    const isWinningSquare = result && result.line && result.line.includes(i);
+    return (
+      <Square
+        key={i}
+        value={squares[i]}
+        onSquareClick={() => handleClick(i)}
+        highlight={isWinningSquare}
+      />
+    );
+  };
 
   return (
     <>
       <div className="status">{status}</div>
       <div className="board-row">
-        <Square value={squares[0]} onSquareClick={() => handleClick(0)} />
-        <Square value={squares[1]} onSquareClick={() => handleClick(1)} />
-        <Square value={squares[2]} onSquareClick={() => handleClick(2)} />
+        {[0, 1, 2].map(renderSquare)}
       </div>
       <div className="board-row">
-        <Square value={squares[3]} onSquareClick={() => handleClick(3)} />
-        <Square value={squares[4]} onSquareClick={() => handleClick(4)} />
-        <Square value={squares[5]} onSquareClick={() => handleClick(5)} />
+        {[3, 4, 5].map(renderSquare)}
       </div>
       <div className="board-row">
-        <Square value={squares[6]} onSquareClick={() => handleClick(6)} />
-        <Square value={squares[7]} onSquareClick={() => handleClick(7)} />
-        <Square value={squares[8]} onSquareClick={() => handleClick(8)} />
+        {[6, 7, 8].map(renderSquare)}
       </div>
     </>
   );
 }
+
+
 
 export default function Game() {
   const [history, setHistory] = useState([Array(9).fill(null)]);
@@ -109,11 +118,18 @@ function calculateWinner(squares) {
     [0, 4, 8],
     [2, 4, 6],
   ];
+
   for (let i = 0; i < lines.length; i++) {
     const [a, b, c] = lines[i];
     if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-      return squares[a];
+      return { winner: squares[a], line: [a, b, c] };
     }
   }
+
+  // Check for a draw
+  if (squares.every(square => square !== null)) {
+    return { winner: "draw", line: null };
+  }
+
   return null;
 }
